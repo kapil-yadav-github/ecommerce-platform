@@ -7,3 +7,9 @@ Order management service for the e-commerce platform.
 - Development
 - Staging
 - Production
+
+## API
+
+GET /orders
+POST /orders
+GET /orders/{id}
