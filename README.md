@@ -10,6 +10,6 @@ Order management service for the e-commerce platform.
 
 ## API
 
-GET /orders
+GET /orders - Retrieve all orders
 POST /orders
 GET /orders/{id}
