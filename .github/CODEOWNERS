@@ -1,0 +1,11 @@
+# Application code
+/src/ @kapil-yadav-github
+
+# CI/CD
+/.github/workflows/ @kapil-yadav-github
+
+# Kubernetes
+/k8s/ @your-github-username
+
+# Helm
+/helm/ @your-github-username
