@@ -29,10 +29,7 @@ jobs:
         run: java -version
 
       - name: Build application
-        run: echo "Building order service"
+        run: mvn clean package
 
       - name: Run tests
-        run: echo "Running tests"
-
-      - name: Build successful
-        run: echo "CI pipeline completed successfully"
+        run: mvn test
