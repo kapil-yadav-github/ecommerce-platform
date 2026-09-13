@@ -5,19 +5,14 @@ on:
     branches:
       - main
 
-  push:
-    branches:
-      - main
-
 jobs:
 
   build:
-    name: Build and Test
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Checkout source code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Java
@@ -27,11 +22,24 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Display Java version
-        run: java -version
+      - name: Build
+        run: mvn clean package -DskipTests
 
-      - name: Display Maven version
-        run: mvn --version
 
-      - name: Build and test
-        run: mvn clean verify
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Run tests
+        run: mvn test
