@@ -10,8 +10,9 @@ on:
       - main
 
 jobs:
-  build:
 
+  build:
+    name: Build and Test
     runs-on: ubuntu-latest
 
     steps:
@@ -24,12 +25,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: maven
 
       - name: Display Java version
         run: java -version
 
-      - name: Build application
-        run: mvn clean package
+      - name: Display Maven version
+        run: mvn --version
 
-      - name: Run tests
-        run: mvn test
+      - name: Build and test
+        run: mvn clean verify
