@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Secure Docker Build and Push
 
 on:
   push:
@@ -15,8 +15,8 @@ env:
   ECR_REPOSITORY: ecommerce/order-service
 
 jobs:
-  build-and-push:
-    name: Build and Push to ECR
+  build-scan-push:
+    name: Build, Scan and Push
     runs-on: ubuntu-latest
 
     steps:
@@ -34,6 +34,19 @@ jobs:
         run: |
           mvn clean package -DskipTests
 
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t order-service:${{ github.sha }} .
+
+      - name: Scan Docker image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: order-service:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -41,18 +54,15 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
-      - name: Verify AWS identity
-        run: |
-          aws sts get-caller-identity
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker image
+      - name: Tag Docker image
         run: |
-          docker build \
-            -t ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+          docker tag \
+            order-service:${{ github.sha }} \
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
       - name: Push Docker image
         run: |
