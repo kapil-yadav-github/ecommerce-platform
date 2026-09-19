@@ -18,6 +18,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Debug GitHub context
         run: |
           echo "Repository: $GITHUB_REPOSITORY"
@@ -26,12 +27,12 @@ jobs:
           echo "Event: $GITHUB_EVENT_NAME"
       - name: Debug OIDC claims
         uses: github/actions-oidc-debugger@main
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: arn:aws:iam::397303792495:role/GitHubActions-Ecommerce
-          aws-region: us-east-1
+      #- name: Configure AWS credentials
+       # uses: aws-actions/configure-aws-credentials@v5
+       # with:
+      #    role-to-assume: arn:aws:iam::397303792495:role/GitHubActions-Ecommerce
+      #    aws-region: us-east-1
 
       #- name: Verify AWS identity
-      #  run: |
+       # run: |
        #   aws sts get-caller-identity
