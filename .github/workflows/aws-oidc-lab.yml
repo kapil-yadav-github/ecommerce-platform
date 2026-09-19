@@ -1,6 +1,7 @@
 name: AWS OIDC Lab
 
 on:
+  push:
   workflow_dispatch:
 
 permissions:
@@ -8,13 +9,11 @@ permissions:
   contents: read
 
 jobs:
-
   aws-auth:
     name: Authenticate to AWS
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -30,6 +29,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::397303792495:role/GitHubActions-Ecommerce
           aws-region: us-east-1
+          audience: sts.amazonaws.com
 
       - name: Verify AWS identity
         run: |
