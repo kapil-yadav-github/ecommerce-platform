@@ -12,7 +12,7 @@ on:
 jobs:
 
   build:
-    name: Build jdczjkjdvsl
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
