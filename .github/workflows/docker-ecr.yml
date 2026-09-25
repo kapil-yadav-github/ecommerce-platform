@@ -1,9 +1,9 @@
 name: Secure Docker Build and Push
 
 on:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 permissions:
@@ -80,6 +80,7 @@ jobs:
     name: Deploy to EC2
     runs-on: ubuntu-latest
     needs: build-scan-push
+
     steps:
 
       - name: Configure AWS credentials
