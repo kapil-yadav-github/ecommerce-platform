@@ -7,6 +7,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Spring Boot Parent -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -14,26 +15,43 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
+    <!-- Project Information -->
+    <groupId>com.ecommerce</groupId>
     <artifactId>order-service</artifactId>
-    <version>1.0.0</version>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>order-service</name>
+    <description>Ecommerce Order Service</description>
 
+    <!-- Java and Security Dependency Versions -->
     <properties>
         <java.version>17</java.version>
+
+        <!-- Jackson -->
+        <jackson-bom.version>2.21.4</jackson-bom.version>
+
+        <!-- Micrometer -->
+        <micrometer.version>1.15.12</micrometer.version>
+
+        <!-- Spring Framework -->
+        <spring-framework.version>6.2.19</spring-framework.version>
     </properties>
 
+    <!-- Dependencies -->
     <dependencies>
 
+        <!-- Spring Web / REST APIs -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Application Monitoring and Health Checks -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -42,12 +60,25 @@
 
     </dependencies>
 
+    <!-- Build Configuration -->
     <build>
+        <finalName>app</finalName>
+
         <plugins>
+
+            <!-- Spring Boot Executable JAR -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
+
         </plugins>
     </build>
 
