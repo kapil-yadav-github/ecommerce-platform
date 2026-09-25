@@ -76,7 +76,7 @@ jobs:
           echo "Image pushed display:"
           echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
 
-deploy:
+  deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
 
