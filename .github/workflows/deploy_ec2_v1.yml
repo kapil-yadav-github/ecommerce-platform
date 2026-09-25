@@ -1,0 +1,87 @@
+name: Deploy Order Service V1 to EC2
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Exact Git SHA image tag from ECR"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 397303792495.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: ecommerce/order-service
+  EC2_INSTANCE_ID: i-013598012d6ecd27e
+
+jobs:
+  deploy:
+    name: Deploy V1 through SSM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::397303792495:role/GitHubActions-Ecommerce
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Deploy using SSM
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+
+          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+          echo "Deploying image: $IMAGE"
+
+          REMOTE_COMMAND="sudo /opt/order-service/deploy.sh $IMAGE"
+
+          PARAMETERS=$(jq -n \
+            --arg cmd "$REMOTE_COMMAND" \
+            '{commands: [$cmd]}')
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "$PARAMETERS" \
+            --region "$AWS_REGION" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM Command ID: $COMMAND_ID"
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --region "$AWS_REGION"
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --region "$AWS_REGION" \
+            --output json
+
+          STATUS=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --region "$AWS_REGION" \
+            --query "Status" \
+            --output text)
+
+          if [ "$STATUS" != "Success" ]; then
+            echo "Deployment failed with status: $STATUS"
+            exit 1
+          fi
+
+          echo "Deployment completed successfully."
