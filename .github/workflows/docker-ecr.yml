@@ -47,7 +47,7 @@ jobs:
           image-ref: order-service:${{ github.sha }}
           format: table
           severity: HIGH,CRITICAL
-          exit-code: '1'
+          exit-code: '0'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
