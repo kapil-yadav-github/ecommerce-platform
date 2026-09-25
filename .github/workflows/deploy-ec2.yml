@@ -1,9 +1,6 @@
-name: Secure Docker Build and Push
+name: Deploy to EC2
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -17,66 +14,7 @@ env:
   EC2_INSTANCE_ID: i-013598012d6ecd27e
 
 jobs:
-  build-scan-push:
-    name: Build, Scan and Push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-
-      - name: Build application
-        run: |
-          mvn clean package -DskipTests
-
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t order-service:${{ github.sha }} .
-
-      - name: Scan Docker image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: order-service:${{ github.sha }}
-          format: table
-          severity: HIGH,CRITICAL
-          exit-code: '1'
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: arn:aws:iam::397303792495:role/GitHubActions-Ecommerce
-          aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Tag Docker image
-        run: |
-          docker tag \
-            order-service:${{ github.sha }} \
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-
-      - name: Push Docker image
-        run: |
-          docker push \
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-
-      - name: Display image
-        run: |
-          echo "Image pushed display:"
-          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
-
-deploy:
+  deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
 
