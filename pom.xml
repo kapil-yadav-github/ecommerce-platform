@@ -25,7 +25,7 @@
     <!-- Java and Security Dependency Versions -->
     <properties>
         <java.version>17</java.version>
-
+        <tomcat.version>10.1.58</tomcat.version>
         <!-- Jackson -->
         <jackson-bom.version>2.21.4</jackson-bom.version>
 
