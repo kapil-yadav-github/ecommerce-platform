@@ -26,6 +26,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Configure Java and Maven
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # Build the Spring Boot JAR
+      - name: Build application with Maven
+        run: mvn clean package -DskipTests
+
+      # Verify that the JAR was generated
+      - name: Verify JAR file
+        run: |
+          echo "Generated JAR files:"
+          ls -lh target/*.jar
+
       # 2. Configure AWS using GitHub OIDC
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
