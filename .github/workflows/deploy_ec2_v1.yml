@@ -1,12 +1,9 @@
 name: Deploy Order Service V1 to EC2
 
 on:
-  workflow_dispatch:
-    inputs:
-      image_tag:
-        description: "Exact Git SHA image tag from ECR"
-        required: true
-        type: string
+  push:
+    branches:
+      -main
 
 permissions:
   id-token: write
@@ -109,12 +106,10 @@ jobs:
 
       - name: Deploy using SSM
         shell: bash
-        env:
-          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
           set -euo pipefail
 
-          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${{GitHub.sha}}"
 
           echo "Deploying image: $IMAGE"
 
