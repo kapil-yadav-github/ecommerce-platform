@@ -12,28 +12,16 @@ permissions:
   pull-requests: read
 
 jobs:
-  build-scan:
-    name: Test, Code Scan and Security Scan
+
+  # 1. Maven build and unit tests
+  build-test:
+    name: Maven Build and Tests
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout PR source with complete Git history
       - name: Checkout PR code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
 
-      # Fetch the PR target branch history
-      - name: Fetch base branch history
-        run: |
-          git fetch --no-tags origin \
-            +refs/heads/main:refs/remotes/origin/main
-
-          git log -1 --oneline HEAD
-          git log -1 --oneline origin/main
-
-      # Configure Java and Maven
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -41,22 +29,56 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # Initialize CodeQL
+      - name: Build and run tests
+        run: mvn clean verify
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-service-jar
+          path: target/*.jar
+          if-no-files-found: error
+          retention-days: 1
+
+  # 2. CodeQL - runs in parallel with Maven
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java-kotlin
           build-mode: manual
 
-      # Build and run unit tests
-      - name: Run tests
-        run: mvn clean package
+      - name: Build for CodeQL
+        run: mvn clean package -DskipTests
 
-      # Analyze source code
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
-      # Scan source files and dependencies
+  # 3. Trivy filesystem scan
+  trivy-fs:
+    name: Trivy Dependency Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
       - name: Scan source and dependencies
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -68,26 +90,69 @@ jobs:
           exit-code: '0'
           ignore-unfixed: true
 
-      # Scan for leaked secrets
+  # 4. Gitleaks secret scan
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Fetch base branch history
+        run: |
+          git fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main
+
       - name: Scan for leaked secrets
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Lint Dockerfile
+  # 5. Hadolint Dockerfile scan
+  hadolint:
+    name: Hadolint Dockerfile Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
           failure-threshold: warning
 
-      # Build Docker image locally - no ECR push
+  # 6. Docker build and image scan
+  docker-scan:
+    name: Docker Build and Image Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # Build JAR independently so this job
+      # does not need to wait for build-test
+      - name: Build application JAR
+        run: mvn clean package -DskipTests
+
       - name: Build Docker image
         run: |
           docker build \
             -t order-service:${{ github.sha }} .
 
-      # Scan the Docker image
       - name: Scan Docker image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
