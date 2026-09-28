@@ -1,0 +1,98 @@
+
+name: Secure PR - Order Service
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+
+jobs:
+  build-scan:
+    name: Test, Code Scan and Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout PR source with complete Git history
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # Fetch the PR target branch history
+      - name: Fetch base branch history
+        run: |
+          git fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main
+
+          git log -1 --oneline HEAD
+          git log -1 --oneline origin/main
+
+      # Configure Java and Maven
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # Initialize CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          build-mode: manual
+
+      # Build and run unit tests
+      - name: Run tests
+        run: mvn clean verify
+
+      # Analyze source code
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      # Scan source files and dependencies
+      - name: Scan source and dependencies
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+
+      # Scan for leaked secrets
+      - name: Scan for leaked secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Lint Dockerfile
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+
+      # Build Docker image locally - no ECR push
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t order-service:${{ github.sha }} .
+
+      # Scan the Docker image
+      - name: Scan Docker image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: order-service:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
